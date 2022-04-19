@@ -24,7 +24,7 @@ library(tm)
 #creating a corpus
 corpus <- Corpus(VectorSource(messages$message))
 print(corpus)
-documents = tm_map(corpus, content_transformer(tolower))
+corpus = tm_map(corpus, content_transformer(tolower))
 corpus = tm_map(corpus, removePunctuation)
 corpus <- tm_map(corpus, removeWords, stopwords("english"))
 
@@ -42,13 +42,13 @@ dtm = DocumentTermMatrix(corpus)
 print(dtm)
 
 #remove sparse terms
-spdtm = removeSparseTerms(dtm, 0.95)
+spdtm = removeSparseTerms(dtm, 0.98)
 print(spdtm)
 
 #creating a dataframe from document term matrix
-temp = as.data.frame(as.matrix(spdtm))
-dim(temp)
-messagesSparse = as.data.frame(as.matrix(dtm))
+#temp = as.data.frame(as.matrix(spdtm))
+#dim(temp)
+messagesSparse = as.data.frame(as.matrix(spdtm))
 dim(messagesSparse)
 
 colnames(messagesSparse) = make.names(colnames(messagesSparse))
@@ -58,5 +58,40 @@ head(sort(colSums(messagesSparse),decreasing = TRUE),n = 20)
 
 messagesSparse$label = messages$label
 
-head(sort(colSums(subset(messagesSparse, spam == 0)),decreasing = TRUE),n = 10)
+#head(sort(colSums(subset(messagesSparse, label == 'ham')),decreasing = TRUE),n = 10)
+
+library(caTools)
+library(rpart)
+library(rpart.plot)
+set.seed(123)
+split<-sample.split(messagesSparse$label,SplitRatio = 0.75)
+
+training_set = subset(messagesSparse,split==TRUE)
+testing_set = subset(messagesSparse,split==FALSE)
+
+dt<-rpart(label~.,training_set,method = "class")
+
+rpart.plot(dt)
+rpart.plot(dt,type = 4, extra = 101)
+
+p<-predict(dt,testing_set,type = "class")
+
+View(testing_set)
+
+library(caret)
+cm <- table(testing_set$label, p)
+print(cm)
+print(confusionMatrix(cm))
+print(confusionMatrix(cm)$overall["Accuracy"]*100)
+
+
+library(e1071)
+#naive-bayes
+classifier_naive <- naiveBayes(label~., data = training_set)
+y_pred <- predict(classifier_naive, newdata = testing_set)
+
+cm <- table(testing_set$label, y_pred)
+print(cm)
+print(confusionMatrix(cm))
+print(confusionMatrix(cm)$overall["Accuracy"]*100)
 

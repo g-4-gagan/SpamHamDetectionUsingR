@@ -17,7 +17,7 @@ print(which(nchar(messages$message) == 2))
 print(paste("Shortest message is: ",messages$message[which(nchar(messages$message) == 2)[1]]))
 print(paste("Longest message is: ",messages$message[which.max(nchar(messages$message))]))
 
-table(messages$label)
+print(table(messages$label))
 
 library(tm)
 
@@ -49,14 +49,22 @@ print(spdtm)
 #temp = as.data.frame(as.matrix(spdtm))
 #dim(temp)
 messagesSparse = as.data.frame(as.matrix(spdtm))
-dim(messagesSparse)
+print(dim(messagesSparse))
 
 colnames(messagesSparse) = make.names(colnames(messagesSparse))
 
 #sorting word and finding more frequent
-head(sort(colSums(messagesSparse),decreasing = TRUE),n = 20)
+print(head(sort(colSums(messagesSparse),decreasing = TRUE),n = 20))
 
 messagesSparse$label = messages$label
+
+#install.packages("wordcloud")
+library(wordcloud)
+spam <- subset(messages, label == "spam")
+wordcloud(spam$message, max.words = 60, colors = brewer.pal(7, "Paired"), random.order = FALSE)
+
+ham <- subset(messages, label == "ham")
+wordcloud(ham$message, max.words = 60, colors = brewer.pal(7, "Paired"), random.order = FALSE)
 
 #head(sort(colSums(subset(messagesSparse, label == 'ham')),decreasing = TRUE),n = 10)
 
@@ -76,7 +84,7 @@ rpart.plot(dt,type = 4, extra = 101)
 
 p<-predict(dt,testing_set,type = "class")
 
-View(testing_set)
+#View(testing_set)
 
 library(caret)
 cm <- table(testing_set$label, p)
@@ -84,14 +92,18 @@ print(cm)
 print(confusionMatrix(cm))
 print(confusionMatrix(cm)$overall["Accuracy"]*100)
 
+convert_values <- function(x) {
+  x <- ifelse(x > 0, "Yes", "No")
+}
+
+msg_train <- apply(training_set[,-which(names(training_set)=="label")], MARGIN = 2,convert_values)
+msg_test <- apply(testing_set, MARGIN = 2,convert_values)
 
 library(e1071)
-#naive-bayes
-classifier_naive <- naiveBayes(label~., data = training_set)
-y_pred <- predict(classifier_naive, newdata = testing_set)
+classifier_naive <- naiveBayes(msg_train,training_set$label)
+y_pred <- predict(classifier_naive, newdata = msg_test)
 
 cm <- table(testing_set$label, y_pred)
 print(cm)
 print(confusionMatrix(cm))
 print(confusionMatrix(cm)$overall["Accuracy"]*100)
-

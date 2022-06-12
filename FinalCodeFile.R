@@ -58,7 +58,6 @@ print(head(sort(colSums(messagesSparse),decreasing = TRUE),n = 20))
 
 messagesSparse$label = messages$label
 
-#install.packages("wordcloud")
 library(wordcloud)
 spam <- subset(messages, label == "spam")
 wordcloud(spam$message, max.words = 60, colors = brewer.pal(7, "Paired"), random.order = FALSE)
